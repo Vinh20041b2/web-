@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài của Vinh_Vu</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+        }
+        .sidebar {
+            width: 20%;
+            padding: 10px;
+            background-color: #f4f4f4;
+        }
+        .content {
+            width: 80%;
+            padding: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            border: none;
+            text-align: center;
+        }
+    </style>
+    <script>
+        function addRow() {
+            const table = document.getElementById('data-table');
+            const newRow = table.insertRow();
+
+            const rowCount = table.rows.length;
+            const indexCell = newRow.insertCell();
+            indexCell.textContent = rowCount - 1; // Automatically set the row index
+
+            for (let i = 1; i < 6; i++) {
+                const newCell = newRow.insertCell();
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = 'Enter data';
+                input.addEventListener('input', updateMatrix);
+                newCell.appendChild(input);
+            }
+        }
+
+        function downloadTableAsExcel() {
+            const table = document.getElementById('data-table');
+            const rows = Array.from(table.rows);
+            const csvContent = rows.map(row => {
+                const cells = Array.from(row.cells);
+                return cells.map(cell => {
+                    const input = cell.querySelector('input');
+                    return input ? input.value : cell.textContent;
+                }).join(',');
+            }).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'table_data.csv';
+            link.click();
+        }
+
+        function updateMatrix() {
+            const table = document.getElementById('data-table');
+            const matrix = [];
+
+            Array.from(table.rows).forEach((row, rowIndex) => {
+                const rowData = [];
+                Array.from(row.cells).forEach((cell, cellIndex) => {
+                    if (cellIndex === 0) {
+                        rowData.push(rowIndex); // Add row index as the first column value
+                    } else {
+                        const input = cell.querySelector('input');
+                        rowData.push(input ? input.value : '');
+                    }
+                });
+                matrix.push(rowData);
+            });
+
+            console.log(matrix); // Log the matrix for debugging or further use
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('#data-table input');
+            inputs.forEach(input => input.addEventListener('input', updateMatrix));
+
+            // Automatically fill the index for existing rows
+            const table = document.getElementById('data-table');
+            Array.from(table.rows).forEach((row, index) => {
+                if (index > 0) row.cells[0].textContent = index;
+            });
+        });
+    </script>
+</head>
+<body>
+
+<div class="sidebar">
+    <h3>Mục Lục</h3>
+    <ul>
+        <li><a href="#">A</a></li>
+        <li><a href="#">B</a></li>
+        <li><a href="#">C</a></li>
+    </ul>
+</div>
+
+<div class="content">
+    <h1>Bài của Vinh_Vu</h1>
+    <table id="data-table">
+        <thead>
+            <tr>
+                <th>stt</th>
+                <th>tên </th>
+                <th>mã hàng</th>
+                <th>vị trí hàng ở trong kho</th>
+                <th>đích đến của hàng</th>
+                <th>thời gian tồn ở kho</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
+            </tr>
+        </tbody>
+    </table>
+    <button onclick="addRow()">Thêm Hàng</button>
+    <button onclick="downloadTableAsExcel()">Tải bảng về dạng Excel</button>
+</div>
+
+</body>
+</html>
