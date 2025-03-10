@@ -1,171 +1,131 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bài của Vinh_Vu</title>
+    <title>Giám sát Cảm biến MQTT</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
+            text-align: center;
+            background: url('https://source.unsplash.com/1600x900/?nature,green') no-repeat center center/cover;
+            color: white;
+            margin: 0;
+            padding: 0;
         }
-        .sidebar {
-            width: 20%;
-            padding: 10px;
-            background-color: #f4f4f4;
-        }
-        .content {
+        .container {
+            margin: 50px auto;
             width: 80%;
-            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        table, th, td {
-            border: 1px solid black;
-        }
-        th, td {
-            padding: 8px;
+        .sensor-box {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            width: 250px;
+            margin: 15px;
             text-align: center;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s;
         }
-        input {
-            width: 100%;
-            border: none;
-            text-align: center;
+        .sensor-box:hover {
+            transform: scale(1.05);
+        }
+        .sensor-box img {
+            width: 60px;
+            height: 60px;
+        }
+        .sensor-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
         }
     </style>
-    <script>
-        function addRow() {
-            const table = document.getElementById('data-table');
-            const newRow = table.insertRow();
-
-            const rowCount = table.rows.length;
-            const indexCell = newRow.insertCell();
-            indexCell.textContent = rowCount - 1; // Automatically set the row index
-
-            for (let i = 1; i < 6; i++) {
-                const newCell = newRow.insertCell();
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.placeholder = 'Enter data';
-                input.addEventListener('input', updateMatrix);
-                newCell.appendChild(input);
-            }
-        }
-
-        function downloadTableAsExcel() {
-            const table = document.getElementById('data-table');
-            const rows = Array.from(table.rows);
-            const csvContent = rows.map(row => {
-                const cells = Array.from(row.cells);
-                return cells.map(cell => {
-                    const input = cell.querySelector('input');
-                    return input ? input.value : cell.textContent;
-                }).join(',');
-            }).join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'table_data.csv';
-            link.click();
-        }
-
-        function updateMatrix() {
-            const table = document.getElementById('data-table');
-            const matrix = [];
-
-            Array.from(table.rows).forEach((row, rowIndex) => {
-                const rowData = [];
-                Array.from(row.cells).forEach((cell, cellIndex) => {
-                    if (cellIndex === 0) {
-                        rowData.push(rowIndex); // Add row index as the first column value
-                    } else {
-                        const input = cell.querySelector('input');
-                        rowData.push(input ? input.value : '');
-                    }
-                });
-                matrix.push(rowData);
-            });
-
-            console.log(matrix); // Log the matrix for debugging or further use
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const inputs = document.querySelectorAll('#data-table input');
-            inputs.forEach(input => input.addEventListener('input', updateMatrix));
-
-            // Automatically fill the index for existing rows
-            const table = document.getElementById('data-table');
-            Array.from(table.rows).forEach((row, index) => {
-                if (index > 0) row.cells[0].textContent = index;
-            });
-        });
-    </script>
 </head>
 <body>
 
-<div class="sidebar">
-    <h3>Mục Lục</h3>
-    <ul>
-        <li><a href="#">A</a></li>
-        <li><a href="#">B</a></li>
-        <li><a href="#">C</a></li>
-    </ul>
-</div>
+    <h1>🌿 Hệ thống Giám sát Cảm biến MQTT</h1>
+    <div class="container">
+        <div class="sensor-box">
+            <img src="https://cdn-icons-png.flaticon.com/512/4815/4815625.png" alt="Độ ẩm">
+            <h3>Độ ẩm không khí</h3>
+            <p class="sensor-value" id="humidity">-- %</p>
+        </div>
 
-<div class="content">
-    <h1>Bài của Vinh_Vu</h1>
-    <table id="data-table">
-        <thead>
-            <tr>
-                <th>stt</th>
-                <th>tên </th>
-                <th>mã hàng</th>
-                <th>vị trí hàng ở trong kho</th>
-                <th>đích đến của hàng</th>
-                <th>thời gian tồn ở kho</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>1</td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-                <td><input type="text" placeholder="Enter data" oninput="updateMatrix()"></td>
-            </tr>
-        </tbody>
-    </table>
-    <button onclick="addRow()">Thêm Hàng</button>
-    <button onclick="downloadTableAsExcel()">Tải bảng về dạng Excel</button>
-</div>
+        <div class="sensor-box">
+            <img src="https://cdn-icons-png.flaticon.com/512/869/869869.png" alt="Ánh sáng">
+            <h3>Cường độ ánh sáng</h3>
+            <p class="sensor-value" id="light">-- lux</p>
+        </div>
+
+        <div class="sensor-box">
+            <img src="https://cdn-icons-png.flaticon.com/512/2917/2917995.png" alt="Nhiệt độ">
+            <h3>Nhiệt độ</h3>
+            <p class="sensor-value" id="temperature">-- °C</p>
+        </div>
+
+        <div class="sensor-box">
+            <img src="https://cdn-icons-png.flaticon.com/512/7651/7651373.png" alt="Độ ẩm đất">
+            <h3>Độ ẩm đất</h3>
+            <p class="sensor-value" id="soil-moisture">-- %</p>
+        </div>
+    </div>
+
+    <script>
+        // Cấu hình MQTT
+        const broker = "wss://e8fa3a03f84a4ba6ae0a38cb4c21a9e6.s1.eu.hivemq.cloud:8884/mqtt"; // Kết nối HiveMQ Cloud qua WebSockets (WSS)
+        const topic = "cambien/data"; // Đổi thành topic của bạn
+        const clientId = "webClient_" + Math.random().toString(16).substr(2, 8); 
+
+        // Thêm tài khoản MQTT của bạn
+        const username = "vuvuvu";  
+        const password = "123456789Aa";  
+
+        // Kết nối đến MQTT Broker
+        const client = mqtt.connect(broker, {
+            clientId: clientId,
+            username: username,
+            password: password,
+            clean: true,
+            connectTimeout: 4000,
+            reconnectPeriod: 1000
+        });
+
+        client.on("connect", () => {
+            console.log("🟢 Kết nối MQTT thành công!");
+            client.subscribe(topic, (err) => {
+                if (!err) {
+                    console.log(`✅ Đã đăng ký topic: ${topic}`);
+                } else {
+                    console.log("❌ Lỗi khi đăng ký topic!", err);
+                }
+            });
+        });
+
+        // Nhận dữ liệu từ MQTT
+        client.on("message", (topic, message) => {
+            try {
+                let data = JSON.parse(message.toString());
+                console.log("📩 Dữ liệu nhận:", data);
+
+                // Cập nhật giá trị cảm biến lên giao diện
+                document.getElementById("humidity").innerText = data.sensor_doam + " %";
+                document.getElementById("light").innerText = data.sensor_anhsang + " lux";
+                document.getElementById("temperature").innerText = data.sensor_nhietdo + " °C";
+                document.getElementById("soil-moisture").innerText = data.sensor_doamdat + " %";
+            } catch (error) {
+                console.error("❌ Lỗi xử lý JSON:", error);
+            }
+        });
+
+        client.on("error", (err) => {
+            console.error("🔴 Lỗi MQTT:", err);
+        });
+
+    </script>
 
 </body>
 </html>
