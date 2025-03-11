@@ -6,69 +6,22 @@
     <title>Giám sát Cảm biến MQTT</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: url('https://source.unsplash.com/1600x900/?nature,green') no-repeat center center/cover;
-            color: white;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            margin: 50px auto;
-            width: 80%;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .sensor-box {
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
-            padding: 20px;
-            width: 250px;
-            margin: 15px;
-            text-align: center;
-            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s;
-        }
-        .sensor-box:hover {
-            transform: scale(1.05);
-        }
-        .sensor-box img {
-            width: 60px;
-            height: 60px;
-        }
-        .sensor-value {
-            font-size: 24px;
-            font-weight: bold;
-            margin-top: 10px;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .container { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; }
+        .card { background: #7bdff2; padding: 20px; border-radius: 10px; box-shadow: 2px 2px 10px gray; width: 200px; }
+        h2 { color: green; }
     </style>
 </head>
 <body>
-    <h1>🌿 Hệ thống Giám sát Cảm biến MQTT</h1>
+    <h2>Hệ thống Giám sát Cảm biến MQTT</h2>
     <div class="container">
-        <div class="sensor-box">
-            <img src="https://cdn-icons-png.flaticon.com/512/4815/4815625.png" alt="Độ ẩm">
-            <h3>Độ ẩm không khí</h3>
-            <p class="sensor-value" id="humidity">-- %</p>
-        </div>
-        <div class="sensor-box">
-            <img src="https://cdn-icons-png.flaticon.com/512/869/869869.png" alt="Ánh sáng">
-            <h3>Cường độ ánh sáng</h3>
-            <p class="sensor-value" id="light">-- lux</p>
-        </div>
-        <div class="sensor-box">
-            <img src="https://cdn-icons-png.flaticon.com/512/2917/2917995.png" alt="Nhiệt độ">
-            <h3>Nhiệt độ</h3>
-            <p class="sensor-value" id="temperature">-- °C</p>
-        </div>
-        <div class="sensor-box">
-            <img src="https://cdn-icons-png.flaticon.com/512/7651/7651373.png" alt="Độ ẩm đất">
-            <h3>Độ ẩm đất</h3>
-            <p class="sensor-value" id="soil-moisture">-- %</p>
-        </div>
+        <div class="card">Nhiệt độ: <span id="temperature">--</span> °C</div>
+        <div class="card">Độ ẩm: <span id="humidity">--</span> %</div>
+        <div class="card">Ánh sáng: <span id="light">--</span> lux</div>
+        <div class="card">Gas: <span id="gas">--</span></div>
+        <div class="card">Khoảng cách: <span id="proximity">--</span></div>
     </div>
+
     <script>
         const broker = "wss://e8fa3a03f84a4ba6ae0a38cb4c21a9e6.s1.eu.hivemq.cloud:8884/mqtt";
         const topic = "esp/cambien";
@@ -76,23 +29,13 @@
         const username = "vuvuvu";
         const password = "1234567890Aa";
 
-        const client = mqtt.connect(broker, {
-            clientId: clientId,
-            username: username,
-            password: password,
-            clean: true,
-            connectTimeout: 4000,
-            reconnectPeriod: 1000
-        });
+        const client = mqtt.connect(broker, { clientId, username, password, clean: true });
 
         client.on("connect", () => {
             console.log("🟢 Kết nối MQTT thành công!");
             client.subscribe(topic, (err) => {
-                if (!err) {
-                    console.log(`✅ Đã đăng ký topic: ${topic}`);
-                } else {
-                    console.log("❌ Lỗi khi đăng ký topic!", err);
-                }
+                if (!err) console.log(`✅ Đã đăng ký topic: ${topic}`);
+                else console.error("❌ Lỗi khi đăng ký topic!", err);
             });
         });
 
@@ -100,19 +43,17 @@
             try {
                 let data = JSON.parse(message.toString());
                 console.log("📩 Dữ liệu nhận:", data);
-                document.getElementById("humidity").innerText = data.sensor_doam + " %";
-                document.getElementById("light").innerText = data.sensor_anhsang + " lux";
-                document.getElementById("temperature").innerText = data.sensor_nhietdo + " °C";
-                document.getElementById("soil-moisture").innerText = data.sensor_doamdat + " %";
+                document.getElementById("temperature").innerText = data.temperature || "--";
+                document.getElementById("humidity").innerText = data.humidity || "--";
+                document.getElementById("light").innerText = data.light || "--";
+                document.getElementById("gas").innerText = data.gas || "--";
+                document.getElementById("proximity").innerText = data.proximity || "--";
             } catch (error) {
                 console.error("❌ Lỗi xử lý JSON:", error);
             }
         });
 
-        client.on("error", (err) => {
-            console.error("🔴 Lỗi MQTT:", err);
-            alert("Lỗi kết nối MQTT: " + err.message + "\nHãy kiểm tra lại username, password và quyền truy cập topic.");
-        });
+        client.on("error", (err) => { console.error("🔴 Lỗi MQTT:", err); });
     </script>
 </body>
 </html>
