@@ -5,55 +5,153 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giám sát Cảm biến MQTT</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; }
-        .container { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; }
-        .card { background: #7bdff2; padding: 20px; border-radius: 10px; box-shadow: 2px 2px 10px gray; width: 200px; }
-        h2 { color: green; }
+        .container { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; margin-left: 50px; }
+        .card-container { display: flex; align-items: center; gap: 10px; position: relative; }
+        .card { background: #7bdff2; padding: 20px; border-radius: 10px; box-shadow: 2px 2px 10px gray; width: 200px; text-align: center; }
+        .slider { width: 150px; }
+        .switch-container { display: flex; align-items: center; gap: 10px; }
+        .chart-container { width: 80%; margin: auto; }
+        #debug { margin-top: 30px; padding: 10px; background: #222; color: #0f0; text-align: left; font-family: monospace; height: 200px; overflow-y: auto; border-radius: 5px; width: 90%; margin-left: auto; margin-right: auto; }
     </style>
 </head>
 <body>
     <h2>Hệ thống Giám sát Cảm biến MQTT</h2>
     <div class="container">
-        <div class="card">Nhiệt độ: <span id="temperature">--</span> °C</div>
-        <div class="card">Độ ẩm: <span id="humidity">--</span> %</div>
-        <div class="card">Ánh sáng: <span id="light">--</span> lux</div>
-        <div class="card">Gas: <span id="gas">--</span></div>
-        <div class="card">Khoảng cách: <span id="proximity">--</span></div>
+        <div class="card-container">
+            <div class="card">Nhiệt độ: <span id="temperature">--</span> °C</div>
+            <input type="range" id="heaterSlider" min="0" max="100" value="80" class="slider">
+            <span id="heaterValue">80</span>
+        </div>
+
+        <div class="card-container">
+            <div class="card">Độ ẩm: <span id="humidity">--</span> %</div>
+            <input type="range" id="fanLevel" min="0" max="3" value="3" class="slider">
+            <span id="fanValue">3</span>
+        </div>
+
+        <div class="card-container">
+            <div class="card">Ánh sáng: <span id="light">--</span> lux</div>
+            <div class="switch-container">
+                <label>Đèn:</label>
+                <label class="switch">
+                    <input type="checkbox" id="lightSwitch">
+                    <span class="slider-switch"></span>
+                </label>
+                <span id="lightStatus">OFF</span>
+            </div>
+        </div>
+
+        <div class="card-container">
+            <div class="card">Độ ẩm đất: <span id="soil_moisture">--</span></div>
+            <div class="switch-container">
+                <label>Máy bơm:</label>
+                <label class="switch">
+                    <input type="checkbox" id="pumpSwitch">
+                    <span class="slider-switch"></span>
+                </label>
+                <span id="pumpStatus">OFF</span>
+            </div>
+        </div>
     </div>
+
+    <h3>Biểu đồ Giám sát Cảm biến</h3>
+    <div class="chart-container">
+        <canvas id="sensorChart"></canvas>
+    </div>
+
+    <h3>Debug Log</h3>
+    <pre id="debug"></pre>
 
     <script>
         const broker = "wss://e8fa3a03f84a4ba6ae0a38cb4c21a9e6.s1.eu.hivemq.cloud:8884/mqtt";
         const topic = "esp/cambien";
+        const publishTopic = "esp/nhan";
         const clientId = "webClient_" + Math.random().toString(16).substr(2, 8);
         const username = "vuvuvu";
         const password = "1234567890Aa";
 
         const client = mqtt.connect(broker, { clientId, username, password, clean: true });
 
+        function logDebug(message) {
+            let debugBox = document.getElementById("debug");
+            debugBox.innerHTML += `\n${new Date().toLocaleTimeString()} - ${message}`;
+            debugBox.scrollTop = debugBox.scrollHeight;
+        }
+
         client.on("connect", () => {
-            console.log("🟢 Kết nối MQTT thành công!");
+            logDebug("🟢 Kết nối MQTT thành công!");
             client.subscribe(topic, (err) => {
-                if (!err) console.log(`✅ Đã đăng ký topic: ${topic}`);
-                else console.error("❌ Lỗi khi đăng ký topic!", err);
+                if (!err) logDebug(`✅ Đã đăng ký topic: ${topic}`);
+                else logDebug("❌ Lỗi khi đăng ký topic!");
             });
         });
 
         client.on("message", (topic, message) => {
             try {
                 let data = JSON.parse(message.toString());
-                console.log("📩 Dữ liệu nhận:", data);
-                document.getElementById("temperature").innerText = data.temperature || "--";
-                document.getElementById("humidity").innerText = data.humidity || "--";
-                document.getElementById("light").innerText = data.light || "--";
-                document.getElementById("gas").innerText = data.gas || "--";
-                document.getElementById("proximity").innerText = data.proximity || "--";
+                logDebug(`📩 Nhận dữ liệu: ${JSON.stringify(data)}`);
+
+                document.getElementById("temperature").innerText = data.sensor_nhietdo ?? "--";
+                document.getElementById("humidity").innerText = data.sensor_doam ?? "--";
+                document.getElementById("light").innerText = data.sensor_anhsang ?? "--";
+                document.getElementById("soil_moisture").innerText = data.sensor_doamdat ?? "--";
+
+                updateChart(data);
             } catch (error) {
-                console.error("❌ Lỗi xử lý JSON:", error);
+                logDebug("❌ Lỗi xử lý JSON!");
             }
         });
 
-        client.on("error", (err) => { console.error("🔴 Lỗi MQTT:", err); });
+        function sendControlData() {
+            const controlData = {
+                control_den: document.getElementById("lightSwitch").checked ? "1" : "0",
+                control_quat: document.getElementById("fanLevel").value,
+                control_maybom: document.getElementById("pumpSwitch").checked ? "1" : "0",
+                control_maysuoi: document.getElementById("heaterSlider").value
+            };
+
+            document.getElementById("lightStatus").innerText = controlData.control_den === "1" ? "ON" : "OFF";
+            document.getElementById("pumpStatus").innerText = controlData.control_maybom === "1" ? "ON" : "OFF";
+
+            logDebug(`📤 Gửi dữ liệu: ${JSON.stringify(controlData)}`);
+            client.publish(publishTopic, JSON.stringify(controlData));
+        }
+
+        document.getElementById("heaterSlider").addEventListener("input", sendControlData);
+        document.getElementById("fanLevel").addEventListener("input", sendControlData);
+        document.getElementById("lightSwitch").addEventListener("change", sendControlData);
+        document.getElementById("pumpSwitch").addEventListener("change", sendControlData);
+
+        const sensorData = { temperature: [], humidity: [], soil_moisture: [], light: [], labels: [] };
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        const sensorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sensorData.labels,
+                datasets: [
+                    { label: 'Nhiệt độ (°C)', data: sensorData.temperature, borderColor: 'red', fill: false },
+                    { label: 'Độ ẩm (%)', data: sensorData.humidity, borderColor: 'blue', fill: false },
+                    { label: 'Độ ẩm đất (%)', data: sensorData.soil_moisture, borderColor: 'green', fill: false },
+                    { label: 'Ánh sáng (lux)', data: sensorData.light, borderColor: 'yellow', fill: false }
+                ]
+            },
+            options: { responsive: true }
+        });
+
+        function updateChart(data) {
+            if (sensorData.labels.length >= 20) {
+                Object.keys(sensorData).forEach(key => sensorData[key].shift());
+            }
+            sensorData.labels.push(new Date().toLocaleTimeString());
+            sensorData.temperature.push(data.sensor_nhietdo ?? 0);
+            sensorData.humidity.push(data.sensor_doam ?? 0);
+            sensorData.soil_moisture.push(data.sensor_doamdat ?? 0);
+            sensorData.light.push(data.sensor_anhsang ?? 0);
+            sensorChart.update();
+        }
     </script>
 </body>
 </html>
